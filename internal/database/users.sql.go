@@ -24,10 +24,10 @@ VALUES (
 `
 
 type CreateUserParams struct {
-	Name         string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	PasswordHash string
+	Name         string    `json:"name"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	PasswordHash string    `json:"password_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
@@ -46,10 +46,10 @@ FROM users WHERE id = $1
 `
 
 type GetUserByIDRow struct {
-	ID        uuid.UUID
-	Name      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (GetUserByIDRow, error) {
