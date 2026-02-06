@@ -1,19 +1,32 @@
 package user
 
-import "github.com/luis-octavius/cintia/internal/auth"
-
-var (
-	EmailNotExists = errors.New("email not exists")
-	InvalidEmail = errors.New("invalid email")
-	InvalidPassword = errors.New("invalid password")
-	InvalidName = errors.New("invalid name")
-)
+/*
+In this file we have the business rules
+So the methods of service are intended to specify how we handle
+constraint or rules to validate a user login, or a registering user, for example
+*/
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/luis-octavius/cintia/internal/auth"
 )
+
+var (
+	ErrEmailExists  = errors.New("email already exists")
+	ErrInvalidName  = errors.New("name must not be empty")
+	ErrInvalidEmail = errors.New("invalid email")
+	ErrWeakPassword = errors.New("password must be at least 8 characters")
+	InvalidName     = errors.New("invalid name")
+)
+
+var ctx = context.Background()
 
 type Service interface {
 	Register(ctx context.Context, input RegisterInput) (*User, error)
@@ -29,28 +42,45 @@ type service struct {
 }
 
 func (s *service) Register(ctx context.Context, input RegisterInput) (*User, error) {
-	switch {
-		case input.Email == "":
-			return nil, InvalidEmail
-		case input.Password == "":
-			return nil, InvalidPassword
-		case input.Name == "":
-			return nil, InvalidName
-		}
+	if input.Name == "" {
+		return nil, ErrInvalidName
+	}
 
-		hash, err := auth.HashPassword(input.Password)
-		if err != nil {
-			return nil, err
-		}
+	if input.Email == "" || !strings.Contains(input.Email, "@") {
+		return nil, ErrInvalidEmail
+	}
 
-		user := &User{
-			ID:        uuid.New(),
-			Email:     input.Email,
-			Password:  hash,
-			Name:      input.Name,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
+	if len(input.Password) < 8 {
+		return nil, ErrWeakPassword
+	}
 
-		return s.repo.Create(ctx, user)
+	existing, err := s.repo.FindByEmail(ctx, input.Email)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+
+	if existing != nil {
+		return nil, ErrEmailExists
+	}
+
+	hash, err := auth.HashPassword(input.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	user := &User{
+		ID:           uuid.New(),
+		Name:         input.Name,
+		Email:        input.Email,
+		PasswordHash: hash,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	createdUser, err := s.repo.Create(ctx, user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return createdUser, nil
 }
