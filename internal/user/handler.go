@@ -1,10 +1,9 @@
 package user
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler interface {
@@ -14,40 +13,46 @@ type Handler interface {
 	UpdateProfileHandler(w http.ResponseWriter, r *http.Request)
 }
 
-type handler struct {
-	s *service
+type GinHandler struct {
+	service Service
 }
 
-func (h *handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func NewGinHandler(s Service) *GinHandler {
+	return &GinHandler{
+		service: s,
+	}
+}
+
+func (h *GinHandler) RegisterHandler(c *gin.Context) {
 	// verify HTTP method
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req RegisterInput
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("Error decoding request: %v", err), http.StatusBadRequest)
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid request format",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	user, err := h.s.Register(context.Background(), req)
+	user, err := h.service.Register(c.Request.Context(), req)
 	if err != nil {
 		status := http.StatusBadRequest
 		if err == ErrEmailExists {
 			status = http.StatusConflict
 		}
-		http.Error(w, err.Error(), status)
+
+		c.JSON(status, gin.H{
+			"error": err.Error(),
+		})
+
+		return
 	}
 
-	response := map[string]interface{}{
+	c.JSON(http.StatusCreated, gin.H{
 		"id":         user.ID,
 		"name":       user.Name,
 		"email":      user.Email,
 		"created_at": user.CreatedAt,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	})
 }

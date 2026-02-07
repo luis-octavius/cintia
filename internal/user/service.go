@@ -41,6 +41,13 @@ type service struct {
 	// in the future, it is possible to add logger, metrics, etc. here
 }
 
+func NewService(r Repository, s string) *service {
+	return &service{
+		repo:      r,
+		jwtSecret: s,
+	}
+}
+
 func (s *service) Register(ctx context.Context, input RegisterInput) (*User, error) {
 	if input.Name == "" {
 		return nil, ErrInvalidName
