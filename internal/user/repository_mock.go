@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -19,7 +20,7 @@ type mockRepository struct {
 
 func NewMockRepository() *mockRepository {
 	return &mockRepository{
-		users: make(map[string]*User)
+		users: make(map[string]*User),
 	}
 }
 
@@ -38,8 +39,8 @@ func (m *mockRepository) Create(ctx context.Context, user *User) (*User, error) 
 func (m *mockRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
- 
-	user, exists = m.users[email]
+
+	user, exists := m.users[email]
 	if !exists {
 		return nil, nil
 	}
@@ -64,7 +65,7 @@ func (m *mockRepository) Update(ctx context.Context, user *User) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	elem, exists := m.users[user.Email]
+	_, exists := m.users[user.Email]
 	if !exists {
 		return ErrInvalidUser
 	}
@@ -79,7 +80,7 @@ func (m *mockRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	for _, user := range m.users {
 		if user.ID == id {
-			delete(m.users, user)
+			delete(m.users, user.Email)
 			return nil
 		}
 	}

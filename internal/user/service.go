@@ -19,11 +19,11 @@ import (
 )
 
 var (
-	ErrEmailExists  = errors.New("email already exists")
-	ErrInvalidName  = errors.New("name must not be empty")
-	ErrInvalidEmail = errors.New("invalid email")
-	ErrWeakPassword = errors.New("password must be at least 8 characters")
-	InvalidName     = errors.New("invalid name")
+	ErrEmailExists     = errors.New("email already exists")
+	ErrInvalidName     = errors.New("name must not be empty")
+	ErrInvalidEmail    = errors.New("invalid email")
+	ErrWeakPassword    = errors.New("password must be at least 8 characters")
+	ErrInvalidPassword = errors.New("password invalid")
 )
 
 var ctx = context.Background()
@@ -90,4 +90,84 @@ func (s *service) Register(ctx context.Context, input RegisterInput) (*User, err
 	}
 
 	return createdUser, nil
+}
+
+func (s *service) Login(ctx context.Context, input LoginInput) (*User, error) {
+	if input.Email == "" || !strings.Contains(input.Email, "@") {
+		return nil, ErrInvalidEmail
+	}
+
+	if len(input.Password) < 8 {
+		return nil, ErrWeakPassword
+	}
+
+	user, err := s.repo.FindByEmail(ctx, input.Email)
+	if err != nil {
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+
+	checkHash, err := auth.CheckPasswordHash(input.Password, user.PasswordHash)
+	if err != nil {
+		return nil, fmt.Errorf("CheckPasswordHash error: %w", err)
+	}
+
+	if !checkHash {
+		return nil, fmt.Errorf("")
+	}
+
+	return user, nil
+}
+
+func (s *service) GetProfile(ctx context.Context, userID uuid.UUID) (*User, error) {
+	err := uuid.Validate(userID.String())
+	if err != nil {
+		return nil, fmt.Errorf("Invalid UUID: %w", err)
+	}
+
+	user, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+
+	return user, nil
+}
+
+func (s *service) UpdateProfile(ctx context.Context, userID uuid.UUID, updates UpdatesInput) (*User, error) {
+	err := uuid.Validate(userID.String())
+	if err != nil {
+		return nil, fmt.Errorf("Invalid UUID: %w", err)
+	}
+
+	user, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+
+	if updates.Name != "" {
+		user.Name = updates.Name
+	}
+
+	if len(updates.Password) < 8 {
+		return nil, ErrInvalidPassword
+	}
+
+	if updates.Email == "" || !strings.Contains(updates.Email, "@") {
+		return nil, ErrInvalidEmail
+	}
+
+	user.Email = updates.Email
+
+	hash, err := auth.HashPassword(updates.Password)
+	if err != nil {
+		return nil, fmt.Errorf("HashPassword error: %w", err)
+	}
+
+	user.PasswordHash = hash
+
+	err = s.repo.Update(ctx, user)
+	if err != nil {
+		return nil, fmt.Errorf("error updating user: %w", err)
+	}
+
+	return user, nil
 }
