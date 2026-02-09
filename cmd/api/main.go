@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/luis-octavius/cintia/internal/middleware"
 	"github.com/luis-octavius/cintia/internal/user"
 )
 
@@ -24,9 +25,14 @@ func main() {
 
 	api := r.Group("/api")
 	{
-		users := api.Group("/users")
+		api.POST("/users/register", handler.RegisterHandler)
+		api.POST("/users/login", handler.LoginHandler)
+
+		protected := api.Group("/users")
+		protected.Use(middleware.AuthMiddleware("jwt-secret-key"))
 		{
-			users.POST("/register", handler.RegisterHandler)
+			protected.GET("/me", handler.GetProfileHandler)
+			protected.GET("/me", handler.UpdateProfileHandler)
 		}
 	}
 
