@@ -30,7 +30,7 @@ var ctx = context.Background()
 
 type Service interface {
 	Register(ctx context.Context, input RegisterInput) (*User, error)
-	Login(ctx context.Context, input LoginInput) (*User, error)
+	Login(ctx context.Context, input LoginInput) (*LoginResponse, error)
 	GetProfile(ctx context.Context, userID uuid.UUID) (*User, error)
 	UpdateProfile(ctx context.Context, userID uuid.UUID, updates UpdatesInput) (*User, error)
 }
@@ -92,13 +92,9 @@ func (s *service) Register(ctx context.Context, input RegisterInput) (*User, err
 	return createdUser, nil
 }
 
-func (s *service) Login(ctx context.Context, input LoginInput) (*User, error) {
-	if input.Email == "" || !strings.Contains(input.Email, "@") {
-		return nil, ErrInvalidEmail
-	}
-
-	if len(input.Password) < 8 {
-		return nil, ErrWeakPassword
+func (s *service) Login(ctx context.Context, input LoginInput) (*LoginResponse, error) {
+	if input.Email == "" || input.Password == "" {
+		return nil, errors.New("email and password are required")
 	}
 
 	user, err := s.repo.FindByEmail(ctx, input.Email)
@@ -106,16 +102,28 @@ func (s *service) Login(ctx context.Context, input LoginInput) (*User, error) {
 		return nil, fmt.Errorf("database error: %w", err)
 	}
 
-	checkHash, err := auth.CheckPasswordHash(input.Password, user.PasswordHash)
+	if user == nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	match, err := auth.CheckPasswordHash(input.Password, user.PasswordHash)
 	if err != nil {
 		return nil, fmt.Errorf("CheckPasswordHash error: %w", err)
 	}
 
-	if !checkHash {
-		return nil, fmt.Errorf("")
+	if !match {
+		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	return user, nil
+	token, err := auth.MakeJWT(user.ID, s.jwtSecret, 3600*time.Hour)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return &LoginResponse{
+		User:  user,
+		Token: token,
+	}, nil
 }
 
 func (s *service) GetProfile(ctx context.Context, userID uuid.UUID) (*User, error) {
@@ -133,40 +141,71 @@ func (s *service) GetProfile(ctx context.Context, userID uuid.UUID) (*User, erro
 }
 
 func (s *service) UpdateProfile(ctx context.Context, userID uuid.UUID, updates UpdatesInput) (*User, error) {
-	err := uuid.Validate(userID.String())
-	if err != nil {
-		return nil, fmt.Errorf("Invalid UUID: %w", err)
+	// validate UUID
+	if err := uuid.Validate(userID.String()); err != nil {
+		return nil, fmt.Errorf("invalid UUID: %w", err)
 	}
 
+	// find existent user
 	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("database error: %w", err)
 	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	// updates provided fields
+	updated := false
 
 	if updates.Name != "" {
 		user.Name = updates.Name
+		updated = true
 	}
 
-	if len(updates.Password) < 8 {
-		return nil, ErrInvalidPassword
+	// check if email is intended to be updated
+	if updates.Email != "" {
+		if !strings.Contains(updates.Email, "@") {
+			return nil, ErrInvalidEmail
+		}
+
+		if updates.Email != user.Email {
+			existing, err := s.repo.FindByEmail(ctx, updates.Email)
+			if err != nil {
+				return nil, fmt.Errorf("database error: %w", err)
+			}
+			if existing != nil {
+				return nil, ErrEmailExists
+			}
+			user.Email = updates.Email
+			updated = true
+		}
 	}
 
-	if updates.Email == "" || !strings.Contains(updates.Email, "@") {
-		return nil, ErrInvalidEmail
+	// check if password is intended to be updated
+	if updates.Password != "" {
+		if len(updates.Password) < 8 {
+			return nil, ErrWeakPassword
+		}
+
+		hash, err := auth.HashPassword(updates.Password)
+		if err != nil {
+			return nil, fmt.Errorf("failed to hash password: %w", err)
+		}
+		user.PasswordHash = hash
+		updated = true
 	}
 
-	user.Email = updates.Email
-
-	hash, err := auth.HashPassword(updates.Password)
-	if err != nil {
-		return nil, fmt.Errorf("HashPassword error: %w", err)
+	if !updated {
+		return nil, errors.New("no fields to update provided")
 	}
 
-	user.PasswordHash = hash
+	// update timestamp
+	user.UpdatedAt = time.Now()
 
-	err = s.repo.Update(ctx, user)
-	if err != nil {
-		return nil, fmt.Errorf("error updating user: %w", err)
+	// save it
+	if err := s.repo.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
 	return user, nil
