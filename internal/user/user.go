@@ -23,7 +23,7 @@ type RegisterInput struct {
 }
 
 type LoginInput struct {
-	Email    string `json:"name"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 

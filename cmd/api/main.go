@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -10,7 +11,20 @@ import (
 )
 
 func main() {
-	godotenv.Load()
+	if err := godotenv.Load("../../.env"); err != nil {
+		log.Println("no .env file found")
+	}
+
+	secret := os.Getenv("SECRET")
+	if secret == "" {
+		secret = "dev-secret-key"
+		log.Println("secret in .env not set, fallback...")
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
 	r := gin.Default()
 
@@ -19,7 +33,7 @@ func main() {
 
 	repo := user.NewMockRepository()
 
-	service := user.NewService(repo, "jwt-secret-key")
+	service := user.NewService(repo, secret)
 
 	handler := user.NewGinHandler(service)
 
@@ -29,10 +43,10 @@ func main() {
 		api.POST("/users/login", handler.LoginHandler)
 
 		protected := api.Group("/users")
-		protected.Use(middleware.AuthMiddleware("jwt-secret-key"))
+		protected.Use(middleware.AuthMiddleware(secret))
 		{
 			protected.GET("/me", handler.GetProfileHandler)
-			protected.GET("/me", handler.UpdateProfileHandler)
+			// protected.GET("/me", handler.UpdateProfileHandler)
 		}
 	}
 
@@ -43,8 +57,8 @@ func main() {
 		})
 	})
 
-	log.Println("server starting on :8080")
-	if err := r.Run(":8080"); err != nil {
+	log.Println("server starting on", port)
+	if err := r.Run(":" + port); err != nil {
 		log.Fatal("failed to start server:", err)
 	}
 }

@@ -1,45 +1,51 @@
 package auth
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer:    "cintia",
-		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn)),
-		Subject:   userID.String(),
-	})
-
-	tokenString, err := token.SignedString([]byte(tokenSecret))
-
-	return tokenString, err
+type UserClaims struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
+	jwt.RegisteredClaims
 }
 
-func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
-		return []byte(tokenSecret), nil
-	})
+func MakeJWT(userID uuid.UUID, email, role, secret string) (string, error) {
+	claims := UserClaims{
+		UserID: userID.String(),
+		Email:  email,
+		Role:   role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "cintia",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+func ValidateJWT(tokenString, secret string) (*UserClaims, error) {
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&UserClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(secret), nil
+		},
+	)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("Error parsing token: %v", err)
+		return nil, err
 	}
 
-	claims, ok := token.Claims.(*jwt.RegisteredClaims)
-	if !ok {
-		return uuid.Nil, fmt.Errorf("Invalid token type claims")
+	if claims, ok := token.Claims.(*UserClaims); ok && token.Valid {
+		return claims, nil
 	}
 
-	subject := claims.Subject
-
-	id, err := uuid.Parse(subject)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("Invalid subject UUID: %v", err)
-	}
-
-	return id, nil
+	return nil, errors.New("invalid token")
 }

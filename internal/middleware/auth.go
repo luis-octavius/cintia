@@ -1,12 +1,11 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/luis-octavius/cintia/internal/auth"
 )
 
 func AuthMiddleware(secret string) gin.HandlerFunc {
@@ -18,7 +17,7 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 			return
 		}
 
-		parts := strings.Split(" ")
+		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization format"})
 			c.Abort()
@@ -27,27 +26,19 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 
 		tokenString := parts[1]
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-
-			return []byte(secret), nil
-		})
-
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		claims, err := auth.ValidateJWT(tokenString, secret)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid token",
+				"message": err.Error(),
+			})
 			c.Abort()
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); !ok {
-			if userID, ok := claims["user_id"].(string); ok {
-				c.Set("userID", userID)
-				c.Set("userEmail", claims["email"])
-				c.Set("userRole", claims["role"])
-			}
-		}
+		c.Set("userID", claims.UserID)
+		c.Set("userEmail", claims.Email)
+		c.Set("userRole", claims.Role)
 
 		c.Next()
 	}

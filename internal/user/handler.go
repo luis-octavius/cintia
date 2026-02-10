@@ -1,6 +1,7 @@
 package user
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -68,6 +69,9 @@ func (h *GinHandler) LoginHandler(c *gin.Context) {
 		})
 		return
 	}
+
+	log.Println("Email: ", req.Email)
+	log.Println("Password: ", req.Password)
 
 	response, err := h.service.Login(c.Request.Context(), req)
 	if err != nil {

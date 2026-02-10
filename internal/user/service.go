@@ -115,7 +115,7 @@ func (s *service) Login(ctx context.Context, input LoginInput) (*LoginResponse, 
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	token, err := auth.MakeJWT(user.ID, s.jwtSecret, 3600*time.Hour)
+	token, err := auth.MakeJWT(user.ID, user.Email, user.Role, s.jwtSecret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
