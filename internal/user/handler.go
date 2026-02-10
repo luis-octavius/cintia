@@ -1,7 +1,7 @@
 package user
 
 import (
-	"log"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -70,9 +70,6 @@ func (h *GinHandler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	log.Println("Email: ", req.Email)
-	log.Println("Password: ", req.Password)
-
 	response, err := h.service.Login(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -124,5 +121,63 @@ func (h *GinHandler) GetProfileHandler(c *gin.Context) {
 			"created_at": user.CreatedAt,
 			"updated_at": user.UpdatedAt,
 		},
+	})
+}
+
+func (h *GinHandler) UpdateProfileHandler(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	var req UpdatesInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "error reading request",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// validate if there is at least one field with a value
+	if req.Name == "" && req.Email == "" && req.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "at least one field (name, email, or password) must be provided",
+		})
+		return
+	}
+
+	user, err := h.service.UpdateProfile(ctx, userID, req)
+	if err != nil {
+		var status int
+		switch {
+		case errors.Is(err, ErrEmailExists):
+			status = http.StatusConflict
+		case errors.Is(err, ErrWeakPassword):
+			status = http.StatusBadRequest
+		default:
+			status = http.StatusInternalServerError
+
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": gin.H{
+			"id":         user.ID,
+			"name":       user.Name,
+			"email":      user.Email,
+			"role":       user.Role,
+			"updated_at": user.UpdatedAt,
+		},
+		"message": "profile updated successfully",
 	})
 }
