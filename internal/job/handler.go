@@ -3,6 +3,7 @@ package job
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -69,6 +70,50 @@ func (h *GinHandler) CreateJobHandler(c *gin.Context) {
 }
 
 func (h *GinHandler) SearchJobsHandler(c *gin.Context) {
+	filters := JobFilters{}
+
+	if title := c.Query("title"); title != "" {
+		filters.Title = title
+	}
+
+	if company := c.Query("company"); company != "" {
+		filters.Company = company
+	}
+
+	if location := c.Query("location"); location != "" {
+		filters.Location = location
+	}
+
+	if source := c.Query("source"); source != "" {
+		filters.Source = source
+	}
+
+	if isActive := c.Query("is_active"); isActive != "" {
+		active := isActive == "true"
+		filters.IsActive = &active
+	}
+
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	filters.Page = page
+
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	if err != nil || limit < 1 || limit > 100 {
+		limit = 20
+	}
+	filters.Limit = limit
+
+	response, err := h.service.SearchJobs(c.Request.Context(), filters)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to search jobs",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *GinHandler) GetJobHandler(c *gin.Context) {

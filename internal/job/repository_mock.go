@@ -14,6 +14,13 @@ type mockRepository struct {
 	links map[string]*Job
 }
 
+func NewMockRepository() Repository {
+	return &mockRepository{
+		jobs:  map[uuid.UUID]*Job{},
+		links: map[string]*Job{},
+	}
+}
+
 func (m *mockRepository) Create(ctx context.Context, job *Job) (*Job, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

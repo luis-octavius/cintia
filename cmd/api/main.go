@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/luis-octavius/cintia/internal/job"
 	"github.com/luis-octavius/cintia/internal/middleware"
 	"github.com/luis-octavius/cintia/internal/user"
 )
@@ -31,23 +32,39 @@ func main() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	repo := user.NewMockRepository()
+	repoUser := user.NewMockRepository()
 
-	service := user.NewService(repo, secret)
+	serviceUser := user.NewService(repoUser, secret)
 
-	handler := user.NewGinHandler(service)
+	handlerUser := user.NewGinHandler(serviceUser)
+
+	repoJob := job.NewMockRepository()
+
+	serviceJob := job.NewService(repoJob)
+
+	handlerJob := job.NewGinHandler(serviceJob)
 
 	api := r.Group("/api")
 	{
-		api.POST("/users/register", handler.RegisterHandler)
-		api.POST("/users/login", handler.LoginHandler)
-
-		protected := api.Group("/users")
-		protected.Use(middleware.AuthMiddleware(secret))
+		// users routes
+		users := api.Group("/users")
 		{
-			protected.GET("/me", handler.GetProfileHandler)
-			protected.PUT("/me", handler.UpdateProfileHandler)
+			users.POST("/register", handlerUser.RegisterHandler)
+			users.POST("/login", handlerUser.LoginHandler)
+			users.Use(middleware.AuthMiddleware(secret))
+			{
+				users.GET("/me", handlerUser.GetProfileHandler)
+				users.PUT("/me", handlerUser.UpdateProfileHandler)
+			}
 		}
+
+		// jobs routes
+		jobs := api.Group("/jobs")
+		{
+			jobs.GET("/", handlerJob.SearchJobsHandler)
+			jobs.POST("/", handlerJob.CreateJobHandler)
+		}
+
 	}
 
 	r.GET("/health", func(c *gin.Context) {
