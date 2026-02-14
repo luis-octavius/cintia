@@ -112,7 +112,7 @@ func (m *mockRepository) Update(ctx context.Context, job *Job) error {
 	return nil
 }
 
-func (m *mockRepository) MarkAsInactive(ctx context.Context, id uuid.UUID) error {
+func (m *mockRepository) MarkJobAsInactive(ctx context.Context, id uuid.UUID) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

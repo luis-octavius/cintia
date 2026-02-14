@@ -6,13 +6,14 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Handler interface {
 	CreateJobHandler(c *gin.Context)
 	SearchJobsHandler(c *gin.Context)
 	GetJobHandler(c *gin.Context)
-	ToggleJobsStatusHandler(c *gin.Context)
+	ToggleJobStatusHandler(c *gin.Context)
 }
 
 type GinHandler struct {
@@ -117,7 +118,69 @@ func (h *GinHandler) SearchJobsHandler(c *gin.Context) {
 }
 
 func (h *GinHandler) GetJobHandler(c *gin.Context) {
+	jobID := c.Param("jobID")
+
+	parsedID, err := uuid.Parse(jobID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	job, err := h.service.GetJob(c.Request.Context(), parsedID)
+	if err != nil {
+		status := http.StatusBadRequest
+		if err == ErrJobNotFound {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{
+			"error":   err.Error(),
+			"message": "failed to get job",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"job": gin.H{	
+			"id":           job.ID,
+			"title":        job.Title,
+			"company":      job.Company,
+			"source":       job.Source,
+			"posted_date":  job.PostedDate,
+			"link":         job.Link,
+			"created_at":   job.CreatedAt,
+			"location": 	  job.Location, 
+			"description":  job.Description, 
+			"salary_range": job.SalaryRange,
+			"is_active":    job.IsActive,
+		}
+	})
 }
 
-func (h *GinHandler) ToggleJobsStatusHandler(c *gin.Context) {
+func (h *GinHandler) ToggleJobStatusHandler(c *gin.Context) {
+	jobID := c.Param("jobID")
+
+	parsedID, err := uuid.Parse(jobID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	err = h.service.MarkJobAsInactive(c.Request.Context(), parsedID)
+	if err != nil {
+		status := http.StatusBadRequest 
+		if error.Is(err, ErrNotFound) {
+			status = http.StatusNotFound 
+		}
+		c.JSON(status, gin.H{
+			"error": err.Error(),
+			"message": "failed to mark job as inactive",
+		})
+		return 
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"message": "job marked as inactive successfully",
+	})
 }

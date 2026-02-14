@@ -54,8 +54,14 @@ type JobsResponse struct {
 }
 
 type UpdateJobInput struct {
-	Title   string `json:"title"`
-	Company string `json:"company"`
-
-	IsActive bool `json:"is_active,omitempty"`
+	Title        string     `json:"title,omitempty"`
+	Company      string     `json:"company,omitempty"`
+	Location     string     `json:"location,omitempty"`
+	Description  string     `json:"description,omitempty"`
+	SalaryRange  string     `json:"salary_range,omitempty"`
+	Requirements string     `json:"requirements,omitempty"`
+	Source       string     `json:"source,omitempty"`
+	Link         string     `json:"link,omitempty"`
+	IsActive     *bool      `json:"is_active,omitempty"`
+	PostedDate   *time.Time `json:"posted_date,omitempty"`
 }
