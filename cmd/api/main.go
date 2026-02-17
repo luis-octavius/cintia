@@ -62,7 +62,13 @@ func main() {
 		jobs := api.Group("/jobs")
 		{
 			jobs.GET("/", handlerJob.SearchJobsHandler)
-			jobs.POST("/", handlerJob.CreateJobHandler)
+			jobs.GET("/:jobID", handlerJob.GetJobHandler)
+			jobs.Use(middleware.AuthMiddleware(secret))
+			{
+				jobs.POST("/", handlerJob.CreateJobHandler)
+				jobs.PATCH("/:jobID", handlerJob.ToggleJobStatusHandler)
+			}
+
 		}
 
 	}

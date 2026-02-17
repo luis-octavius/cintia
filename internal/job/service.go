@@ -261,7 +261,7 @@ func (s *service) MarkJobAsInactive(ctx context.Context, id uuid.UUID) error {
 
 	job.UpdatedAt = time.Now()
 
-	err = s.repo.MarkAsInactive(ctx, id)
+	err = s.repo.MarkJobAsInactive(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to mark job as inactive: %w", err)
 	}

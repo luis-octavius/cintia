@@ -140,7 +140,7 @@ func (h *GinHandler) GetJobHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"job": gin.H{	
+		"job": gin.H{
 			"id":           job.ID,
 			"title":        job.Title,
 			"company":      job.Company,
@@ -148,11 +148,11 @@ func (h *GinHandler) GetJobHandler(c *gin.Context) {
 			"posted_date":  job.PostedDate,
 			"link":         job.Link,
 			"created_at":   job.CreatedAt,
-			"location": 	  job.Location, 
-			"description":  job.Description, 
+			"location":     job.Location,
+			"description":  job.Description,
 			"salary_range": job.SalaryRange,
 			"is_active":    job.IsActive,
-		}
+		},
 	})
 }
 
@@ -169,15 +169,15 @@ func (h *GinHandler) ToggleJobStatusHandler(c *gin.Context) {
 
 	err = h.service.MarkJobAsInactive(c.Request.Context(), parsedID)
 	if err != nil {
-		status := http.StatusBadRequest 
-		if error.Is(err, ErrNotFound) {
-			status = http.StatusNotFound 
+		status := http.StatusBadRequest
+		if errors.Is(err, ErrNotFound) {
+			status = http.StatusNotFound
 		}
 		c.JSON(status, gin.H{
-			"error": err.Error(),
+			"error":   err.Error(),
 			"message": "failed to mark job as inactive",
 		})
-		return 
+		return
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{
