@@ -41,7 +41,7 @@ type service struct {
 	// in the future, it is possible to add logger, metrics, etc. here
 }
 
-func NewService(r Repository, s string) *service {
+func NewService(r Repository, s string) Service {
 	return &service{
 		repo:      r,
 		jwtSecret: s,
