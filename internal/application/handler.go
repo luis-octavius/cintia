@@ -133,10 +133,113 @@ func (h *GinHandler) GetUserApplicationsHandler(c *gin.Context) {
 
 // 3. GET /api/applications/:id - details of an application
 func (h *GinHandler) GetApplicationHandler(c *gin.Context) {
+	jobIDStr := c.Param("id")
+	if jobIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "application id is required",
+		})
+		return
+	}
+
+	jobID, err := uuid.Parse(jobIDStr)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, ErrApplicationNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	app, err := h.service.GetApplicationByID(c.Request.Context(), jobID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// verify if user has permission
+	userIDStr, _ := c.Get("userID")
+	userID, _ := uuid.Parse(userIDStr.(string))
+
+	if app.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "you don't have permission to view this application",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"application": gin.H{
+			"id":             app.ID,
+			"job_id":         app.JobID,
+			"status":         app.Status,
+			"notes":          app.Notes,
+			"applied_at":     app.AppliedAt,
+			"updated_at":     app.UpdatedAt,
+			"interview_date": app.InterviewDate,
+			"offer_date":     app.OfferDate,
+			"follow_up_date": app.FollowUpDate,
+		},
+	})
 }
 
 // 4. GET /api/jobs/:jobID/applications - sees who applied
 func (h *GinHandler) GetJobApplicationsHandler(c *gin.Context) {
+	// verify if user is admin
+	userRole, exists := c.Get("userRole")
+	if !exists || userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "admin access required",
+		})
+		return
+	}
+
+	jobIDStr := c.Param("jobID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "job does is required",
+		})
+		return
+	}
+
+	jobID, err := uuid.Parse(jobIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid job id format",
+		})
+		return
+	}
+
+	jobApplications, err := h.service.GetJobApplications(c.Request.Context(), jobID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	response := make([]gin.H, 0)
+	for _, app := range jobApplications {
+		response = append(response, gin.H{
+			"id":             app.ID,
+			"job_id":         app.JobID,
+			"status":         app.Status,
+			"notes":          app.Notes,
+			"applied_at":     app.AppliedAt,
+			"updated_at":     app.UpdatedAt,
+			"interview_date": app.InterviewDate,
+			"offer_date":     app.OfferDate,
+			"follow_up_date": app.FollowUpDate,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"applications": response,
+	})
 }
 
 // 5. PUT /api/applications/:id - update application
