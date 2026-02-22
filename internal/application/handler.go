@@ -244,12 +244,177 @@ func (h *GinHandler) GetJobApplicationsHandler(c *gin.Context) {
 
 // 5. PUT /api/applications/:id - update application
 func (h *GinHandler) UpdateApplicationHandler(c *gin.Context) {
+	appIDStr := c.Param("id")
+	appID, err := uuid.Parse(appIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid job id format",
+		})
+		return
+	}
+
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "user not authenticated"
+		})
+		return 
+	}
+	userIDStr, ok := userIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "invalid user id in context"
+		})
+		return 
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid user id format"
+		})
+		return 
+	}
+
+	app, err := h.service.GetApplicationByID(c.Request.Context(), appID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "application not found"
+		})
+		return
+	}
+
+	if app.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "you can only update your own applications"
+		})
+		return 
+	}
+
+	var req UpdateApplicationInput
+	if err = c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	err = h.service.UpdateApplication(c.Request.Context(), appID, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "error updating application",
+		})
+		return 
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "application updated successfully",
+	})
 }
 
 // 6; PATCH /api/applications/:id/status - update status
 func (h *GinHandler) UpdateStatusHandler(c *gin.Context) {
+	appIDStr := c.Param("id")
+	appID, err := uuid.Parse(appIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid application id format"
+		})
+		return 
+	}
+
+	userIDVal, _ := c.Get("userID")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid user id format"
+		})
+	}
+
+	app, err := h.service.GetApplicationByID(c.Request.Context(), appID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "application not found"
+		})
+		return 
+	}
+
+	if app.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "you can only update your own applications"
+		})
+		return 
+	}
+
+	var input struct {
+		Status ApplicationStatus `json:"status" binding:"required"`
+	}
+
+	if err = c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "status is required"
+		})
+		return 
+	}
+	
+	err = h.service.UpdateApplicationStatus(c.Request.Context(), status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error()
+		})
+		return 
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "status updated successfully"
+	})
+
 }
 
 // 7. DELETE /api/applications/:id - delete application
 func (h *GinHandler) DeleteApplicationHandler(c *gin.Context) {
+	appIDStr := c.Param("id")
+	appID, err := uuid.Parse(appIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid application id format"
+		})
+		return 
+	}
+
+	userIDVal, _ := c.Get("userID")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid user id format"
+		})
+		return 
+	}
+
+	app, err := h.service.GetApplicationByID(c.Request.Context(), appID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "application not found"
+		})
+		return 
+	}
+
+	if app.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "you can only delete your own applications"
+		})
+		return 
+	}
+
+	err = h.service.Delete(c.Request.Context(), appID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "error deleting application"
+		})
+		return 
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "application deleted successfully"
+	})
 }
