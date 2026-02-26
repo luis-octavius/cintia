@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/luis-octavius/cintia/internal/application"
 	"github.com/luis-octavius/cintia/internal/job"
 	"github.com/luis-octavius/cintia/internal/middleware"
 	"github.com/luis-octavius/cintia/internal/user"
@@ -33,16 +34,16 @@ func main() {
 	r.Use(gin.Recovery())
 
 	repoUser := user.NewMockRepository()
-
 	serviceUser := user.NewService(repoUser, secret)
-
 	handlerUser := user.NewGinHandler(serviceUser)
 
 	repoJob := job.NewMockRepository()
-
 	serviceJob := job.NewService(repoJob)
-
 	handlerJob := job.NewGinHandler(serviceJob)
+
+	repoApp := application.NewMockRepository()
+	serviceApp := application.NewService(repoApp, serviceJob, serviceUser)
+	handlerApp := application.NewGinHandler(serviceApp)
 
 	api := r.Group("/api")
 	{
@@ -63,12 +64,23 @@ func main() {
 		{
 			jobs.GET("/", handlerJob.SearchJobsHandler)
 			jobs.GET("/:jobID", handlerJob.GetJobHandler)
+			jobs.GET("/:jobID/applications", handlerApp.GetJobApplicationsHandler)
 			jobs.Use(middleware.AuthMiddleware(secret))
 			{
 				jobs.POST("/", handlerJob.CreateJobHandler)
 				jobs.PATCH("/:jobID", handlerJob.ToggleJobStatusHandler)
 			}
 
+		}
+
+		applications := api.Group("/applications")
+		{
+			applications.POST("/", handlerApp.CreateApplicationHandler)
+			applications.GET("/", handlerApp.GetUserApplicationsHandler)
+			applications.GET("/:id", handlerApp.GetApplicationHandler)
+			applications.PUT("/:id", handlerApp.UpdateApplicationHandler)
+			applications.PATCH("/:id/status", handlerApp.UpdateStatusHandler)
+			applications.DELETE("/:id", handlerApp.DeleteApplicationHandler)
 		}
 
 	}

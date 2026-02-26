@@ -2,9 +2,8 @@ package application
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -14,9 +13,9 @@ type mockRepository struct {
 	applications map[uuid.UUID]*Application
 }
 
-func NewMockRepository() *mockRepository {
+func NewMockRepository() Repository {
 	return &mockRepository{
-		applications: make(map[uuid.UUID]*Application)
+		applications: make(map[uuid.UUID]*Application),
 	}
 }
 
@@ -101,12 +100,12 @@ func (m *mockRepository) Update(ctx context.Context, app *Application) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	application, exists := m.applications[app.id]
+	application, exists := m.applications[app.ID]
 	if !exists {
 		return ErrNotFound
 	}
-	 
-	if app.Status != {
+
+	if app.Status != application.Status {
 		if !app.Status.IsValid() {
 			return ErrInvalidStatus
 		}
@@ -115,12 +114,12 @@ func (m *mockRepository) Update(ctx context.Context, app *Application) error {
 		}
 	}
 
-	application.Status = app.Status 
+	application.Status = app.Status
 	application.InterviewDate = app.InterviewDate
-	application.OfferDate = app.OfferDate 
-	application.SalaryOffer = app.SalaryOffer 
-	application.ReminderSent = app.ReminderSent 
-	application.FollowUpdate = app.FollowUpdate 
+	application.OfferDate = app.OfferDate
+	application.SalaryOffer = app.SalaryOffer
+	application.ReminderSent = app.ReminderSent
+	application.FollowUpDate = app.FollowUpDate
 	application.UpdatedAt = time.Now()
 
 	m.applications[app.ID] = application

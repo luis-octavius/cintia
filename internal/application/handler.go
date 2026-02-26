@@ -256,39 +256,39 @@ func (h *GinHandler) UpdateApplicationHandler(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "user not authenticated"
+			"error": "user not authenticated",
 		})
-		return 
+		return
 	}
 	userIDStr, ok := userIDVal.(string)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "invalid user id in context"
+			"error": "invalid user id in context",
 		})
-		return 
+		return
 	}
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid user id format"
+			"error": "invalid user id format",
 		})
-		return 
+		return
 	}
 
 	app, err := h.service.GetApplicationByID(c.Request.Context(), appID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "application not found"
+			"error": "application not found",
 		})
 		return
 	}
 
 	if app.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{
-			"error": "you can only update your own applications"
+			"error": "you can only update your own applications",
 		})
-		return 
+		return
 	}
 
 	var req UpdateApplicationInput
@@ -304,7 +304,7 @@ func (h *GinHandler) UpdateApplicationHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "error updating application",
 		})
-		return 
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -318,32 +318,32 @@ func (h *GinHandler) UpdateStatusHandler(c *gin.Context) {
 	appID, err := uuid.Parse(appIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid application id format"
+			"error": "invalid application id format",
 		})
-		return 
+		return
 	}
 
 	userIDVal, _ := c.Get("userID")
-	userID, err := uuid.Parse(userIDStr)
+	userID, err := uuid.Parse(userIDVal.(string))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid user id format"
+			"error": "invalid user id format",
 		})
 	}
 
 	app, err := h.service.GetApplicationByID(c.Request.Context(), appID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "application not found"
+			"error": "application not found",
 		})
-		return 
+		return
 	}
 
 	if app.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{
-			"error": "you can only update your own applications"
+			"error": "you can only update your own applications",
 		})
-		return 
+		return
 	}
 
 	var input struct {
@@ -352,23 +352,22 @@ func (h *GinHandler) UpdateStatusHandler(c *gin.Context) {
 
 	if err = c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "status is required"
+			"error": "status is required",
 		})
-		return 
+		return
 	}
-	
-	err = h.service.UpdateApplicationStatus(c.Request.Context(), status)
+
+	err = h.service.UpdateApplicationStatus(c.Request.Context(), app.ID, input.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error()
+			"error": err.Error(),
 		})
-		return 
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "status updated successfully"
+		"message": "status updated successfully",
 	})
-
 }
 
 // 7. DELETE /api/applications/:id - delete application
@@ -377,44 +376,44 @@ func (h *GinHandler) DeleteApplicationHandler(c *gin.Context) {
 	appID, err := uuid.Parse(appIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid application id format"
+			"error": "invalid application id format",
 		})
-		return 
+		return
 	}
 
 	userIDVal, _ := c.Get("userID")
-	userID, err := uuid.Parse(userIDStr)
+	userID, err := uuid.Parse(userIDVal.(string))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid user id format"
+			"error": "invalid user id format",
 		})
-		return 
+		return
 	}
 
 	app, err := h.service.GetApplicationByID(c.Request.Context(), appID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "application not found"
+			"error": "application not found",
 		})
-		return 
+		return
 	}
 
 	if app.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{
-			"error": "you can only delete your own applications"
+			"error": "you can only delete your own applications",
 		})
-		return 
+		return
 	}
 
 	err = h.service.Delete(c.Request.Context(), appID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "error deleting application"
+			"error": "error deleting application",
 		})
-		return 
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "application deleted successfully"
+		"message": "application deleted successfully",
 	})
 }
