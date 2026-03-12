@@ -5,15 +5,50 @@
 package database
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+type Application struct {
+	ID            uuid.UUID      `json:"id"`
+	UserID        uuid.UUID      `json:"user_id"`
+	JobID         uuid.UUID      `json:"job_id"`
+	Status        string         `json:"status"`
+	AppliedAt     time.Time      `json:"applied_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	InterviewDate sql.NullTime   `json:"interview_date"`
+	OfferDate     sql.NullTime   `json:"offer_date"`
+	Notes         sql.NullString `json:"notes"`
+	SalaryOffer   sql.NullString `json:"salary_offer"`
+	ReminderSent  bool           `json:"reminder_sent"`
+	FollowUpDate  sql.NullTime   `json:"follow_up_date"`
+}
+
+type Job struct {
+	ID           uuid.UUID      `json:"id"`
+	Title        string         `json:"title"`
+	Company      string         `json:"company"`
+	Location     string         `json:"location"`
+	Description  string         `json:"description"`
+	SalaryRange  sql.NullString `json:"salary_range"`
+	Requirements sql.NullString `json:"requirements"`
+	Source       string         `json:"source"`
+	Link         string         `json:"link"`
+	PostedDate   time.Time      `json:"posted_date"`
+	ScrapedAt    time.Time      `json:"scraped_at"`
+	IsActive     bool           `json:"is_active"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+}
+
 type User struct {
 	ID           uuid.UUID `json:"id"`
 	Name         string    `json:"name"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"password_hash"`
+	Role         string    `json:"role"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
-	PasswordHash string    `json:"password_hash"`
 }

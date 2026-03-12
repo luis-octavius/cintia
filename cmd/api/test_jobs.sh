@@ -7,7 +7,6 @@ if [ -z "$TOKEN" ]; then
   exit 1 
 fi 
 
-
 printf "\nCreating a Job and getting his ID...\n"
 
 JOB_ID_GO=$(curl -X POST http://localhost:8080/api/jobs/ \
@@ -53,14 +52,18 @@ curl 'http://localhost:8080/api/jobs/?company=mercado' | jq
 
 printf "\nTesting with requirements = 'kubernetes'"
 curl 'http://localhost:8080/api/jobs/?requirements=kubernetes' | jq
+#
+# printf "\nChanging job to inactive...\n"
+#
+# curl -X PATCH http://localhost:8080/api/jobs/$JOB_ID_GO \
+#   -H "Authorization: Bearer $TOKEN" | jq 
+#
+# curl -X PATCH http://localhost:8080/api/jobs/$JOB_ID_JAVA \
+#   -H "Authorization: Bearer $TOKEN" | jq 
+#
+echo "$JOB_ID_GO" > /tmp/job_id_go 
+echo "$JOB_ID_JAVA" > /tmp/job_id_java
 
-printf "\nChanging job to inactive...\n"
-
-curl -X PATCH http://localhost:8080/api/jobs/$JOB_ID_GO \
-  -H "Authorization: Bearer $TOKEN" | jq 
-
-curl -X PATCH http://localhost:8080/api/jobs/$JOB_ID_JAVA \
-  -H "Authorization: Bearer $TOKEN" | jq 
-
-
+echo "Job ID Go saved: $JOB_ID_GO"
+echo "Job ID Java saved: $JOB_ID_JAVA"
 

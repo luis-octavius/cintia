@@ -75,12 +75,15 @@ func main() {
 
 		applications := api.Group("/applications")
 		{
-			applications.POST("/", handlerApp.CreateApplicationHandler)
-			applications.GET("/", handlerApp.GetUserApplicationsHandler)
-			applications.GET("/:id", handlerApp.GetApplicationHandler)
-			applications.PUT("/:id", handlerApp.UpdateApplicationHandler)
-			applications.PATCH("/:id/status", handlerApp.UpdateStatusHandler)
-			applications.DELETE("/:id", handlerApp.DeleteApplicationHandler)
+			applications.Use(middleware.AuthMiddleware(secret))
+			{
+				applications.POST("/", handlerApp.CreateApplicationHandler)
+				applications.GET("/", handlerApp.GetUserApplicationsHandler)
+				applications.GET("/:id", handlerApp.GetApplicationHandler)
+				applications.PUT("/:id", handlerApp.UpdateApplicationHandler)
+				applications.PATCH("/:id/status", handlerApp.UpdateStatusHandler)
+				applications.DELETE("/:id", handlerApp.DeleteApplicationHandler)
+			}
 		}
 
 	}
