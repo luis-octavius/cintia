@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/luis-octavius/cintia/internal/application"
+	"github.com/luis-octavius/cintia/internal/database"
 	"github.com/luis-octavius/cintia/internal/job"
 	"github.com/luis-octavius/cintia/internal/middleware"
 	"github.com/luis-octavius/cintia/internal/user"
@@ -28,20 +29,39 @@ func main() {
 		port = "8080"
 	}
 
+	// Database connection
+	dbConfig := database.Config{
+		Host:     getEnv("DB_HOST", "localhost"),
+		Port:     getEnv("DB_PORT", "5432"),
+		User:     getEnv("DB_USER", "postgres"),
+		Password: getEnv("DB_PASSWORD", ""),
+		DBName:   getEnv("DB_NAME", "cintia"),
+		SSLMode:  getEnv("DB_SSLMODE", "disable"),
+	}
+
+	db, err := database.NewConnection(dbConfig)
+	if err != nil {
+		log.Fatal("failed to connect to database:", err)
+	}
+	defer db.Close()
+
+	log.Println("database connected successfully")
+
 	r := gin.Default()
 
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	repoUser := user.NewMockRepository()
+	// Initialize repositories with real database
+	repoUser := user.NewPostgresRepository(db)
 	serviceUser := user.NewService(repoUser, secret)
 	handlerUser := user.NewGinHandler(serviceUser)
 
-	repoJob := job.NewMockRepository()
+	repoJob := job.NewPostgresRepository(db)
 	serviceJob := job.NewService(repoJob)
 	handlerJob := job.NewGinHandler(serviceJob)
 
-	repoApp := application.NewMockRepository()
+	repoApp := application.NewPostgresRepository(db)
 	serviceApp := application.NewService(repoApp, serviceJob, serviceUser)
 	handlerApp := application.NewGinHandler(serviceApp)
 
@@ -99,4 +119,13 @@ func main() {
 	if err := r.Run(":" + port); err != nil {
 		log.Fatal("failed to start server:", err)
 	}
+}
+
+// getEnv gets an environment variable or returns a default value
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
