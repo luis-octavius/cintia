@@ -1,5 +1,19 @@
 ## Atualizacao de manutencao (2026-03-29)
 
+## Atualizacao de manutencao (2026-03-30)
+
+### Scraper Service (primeira entrega)
+- Implementado `internal/scraper/scheduler.go` com orquestracao por fontes, loop periodico e run unico.
+- Adicionado tracking de estatisticas por execucao (fetched, created, skipped) e por fonte.
+- Tratamento de duplicidade integrado com `job.ErrDuplicateJob` para pular inserts repetidos.
+- Implementadas fontes iniciais em `internal/scraper/sources/linkedin.go` e `internal/scraper/sources/indeed.go`.
+- Novo worker em `cmd/scraper/main.go` integrado com PostgreSQL + `job.Service`, configuravel por env:
+    - `SCRAPER_ONCE`
+    - `SCRAPER_INTERVAL`
+    - `SCRAPER_KEYWORDS`
+    - `SCRAPER_LOCATION`
+- Mantido status de Scraper como parcial: pipeline funciona, parsing real dos portais ainda precisa evoluir.
+
 ### API Fixes
 - Corrigido status HTTP de perfil: `GET /api/users/me` agora retorna 200 em vez de 302.
 - Corrigido contexto de requisicao em update de perfil para usar `c.Request.Context()`.
