@@ -40,7 +40,7 @@ func TestGetJobHandler_ValidID(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/jobs/"+jobID.String(), nil)
-	c.Params = gin.Params{{Key: "jobID", Value: jobID.String()}}
+	c.Params = gin.Params{gin.Param{Key: "jobID", Value: jobID.String()}}
 
 	// Execute
 	handler.GetJobHandler(c)
@@ -67,7 +67,7 @@ func TestGetJobHandler_NotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/jobs/"+jobID.String(), nil)
-	c.Params = gin.Params{{Key: "jobID", Value: jobID.String()}}
+	c.Params = gin.Params{gin.Param{Key: "jobID", Value: jobID.String()}}
 
 	// Execute
 	handler.GetJobHandler(c)
@@ -93,7 +93,7 @@ func TestToggleJobStatusHandler_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("PATCH", "/jobs/"+jobID.String()+"/status", nil)
-	c.Params = gin.Params{{Key: "jobID", Value: jobID.String()}}
+	c.Params = gin.Params{gin.Param{Key: "jobID", Value: jobID.String()}}
 
 	// Execute
 	handler.ToggleJobStatusHandler(c)
@@ -120,7 +120,7 @@ func TestToggleJobStatusHandler_NotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("PATCH", "/jobs/"+jobID.String()+"/status", nil)
-	c.Params = gin.Params{{Key: "jobID", Value: jobID.String()}}
+	c.Params = gin.Params{gin.Param{Key: "jobID", Value: jobID.String()}}
 
 	// Execute
 	handler.ToggleJobStatusHandler(c)
@@ -131,11 +131,11 @@ func TestToggleJobStatusHandler_NotFound(t *testing.T) {
 
 // Mock service for testing
 type mockJobService struct {
-	mockCreateJob          func(context.Context, CreateJobInput) (*Job, error)
-	mockSearchJobs         func(context.Context, JobFilters) (*JobsResponse, error)
-	mockGetJob             func(context.Context, uuid.UUID) (*Job, error)
-	mockUpdateJob          func(context.Context, uuid.UUID, UpdateJobInput) (*Job, error)
-	mockMarkJobAsInactive  func(context.Context, uuid.UUID) error
+	mockCreateJob         func(context.Context, CreateJobInput) (*Job, error)
+	mockSearchJobs        func(context.Context, JobFilters) (*JobsResponse, error)
+	mockGetJob            func(context.Context, uuid.UUID) (*Job, error)
+	mockUpdateJob         func(context.Context, uuid.UUID, UpdateJobInput) (*Job, error)
+	mockMarkJobAsInactive func(context.Context, uuid.UUID) error
 }
 
 func (m *mockJobService) CreateJob(ctx context.Context, input CreateJobInput) (*Job, error) {

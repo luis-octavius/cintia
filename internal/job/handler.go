@@ -128,9 +128,9 @@ func (h *GinHandler) GetJobHandler(c *gin.Context) {
 
 	job, err := h.service.GetJob(c.Request.Context(), parsedID)
 	if err != nil {
-		status := http.StatusBadRequest
-		if err == ErrJobNotFound {
-			status = http.StatusNotFound
+		status := http.StatusNotFound
+		if !errors.Is(err, ErrJobNotFound) {
+			status = http.StatusInternalServerError
 		}
 		c.JSON(status, gin.H{
 			"error":   err.Error(),
@@ -169,7 +169,7 @@ func (h *GinHandler) ToggleJobStatusHandler(c *gin.Context) {
 
 	err = h.service.MarkJobAsInactive(c.Request.Context(), parsedID)
 	if err != nil {
-		status := http.StatusBadRequest
+		status := http.StatusInternalServerError
 		if errors.Is(err, ErrNotFound) {
 			status = http.StatusNotFound
 		}
@@ -180,7 +180,7 @@ func (h *GinHandler) ToggleJobStatusHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusAccepted, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "job marked as inactive successfully",
 	})
 }

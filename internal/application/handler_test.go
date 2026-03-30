@@ -217,13 +217,13 @@ func TestUpdateStatusHandler_ValidTransition(t *testing.T) {
 
 // Mock service for testing
 type mockApplicationService struct {
-	mockCreateApplication          func(context.Context, uuid.UUID, CreateApplicationInput) (*Application, error)
-	mockGetApplicationByID          func(context.Context, uuid.UUID) (*Application, error)
-	mockGetUserApplications         func(context.Context, uuid.UUID) ([]*Application, error)
-	mockGetJobApplications          func(context.Context, uuid.UUID) ([]*Application, error)
-	mockUpdateApplication           func(context.Context, uuid.UUID, UpdateApplicationInput) error
-	mockUpdateApplicationStatus     func(context.Context, uuid.UUID, ApplicationStatus) error
-	mockDelete                      func(context.Context, uuid.UUID) error
+	mockCreateApplication       func(context.Context, uuid.UUID, CreateApplicationInput) (*Application, error)
+	mockGetApplicationByID      func(context.Context, uuid.UUID) (*Application, error)
+	mockGetUserApplications     func(context.Context, uuid.UUID) ([]*Application, error)
+	mockGetJobApplications      func(context.Context, uuid.UUID) ([]*Application, error)
+	mockUpdateApplication       func(context.Context, uuid.UUID, UpdateApplicationInput) error
+	mockUpdateApplicationStatus func(context.Context, uuid.UUID, ApplicationStatus) error
+	mockDelete                  func(context.Context, uuid.UUID) error
 }
 
 func (m *mockApplicationService) CreateApplication(ctx context.Context, userID uuid.UUID, input CreateApplicationInput) (*Application, error) {
