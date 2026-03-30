@@ -139,10 +139,10 @@ func TestUpdateProfileHandler_NoFields(t *testing.T) {
 
 // Mock service for testing
 type mockService struct {
-	mockRegister       func(context.Context, RegisterInput) (*User, error)
-	mockLogin          func(context.Context, LoginInput) (*LoginResponse, error)
-	mockGetProfile     func(context.Context, uuid.UUID) (*User, error)
-	mockUpdateProfile  func(context.Context, uuid.UUID, UpdatesInput) (*User, error)
+	mockRegister      func(context.Context, RegisterInput) (*User, error)
+	mockLogin         func(context.Context, LoginInput) (*LoginResponse, error)
+	mockGetProfile    func(context.Context, uuid.UUID) (*User, error)
+	mockUpdateProfile func(context.Context, uuid.UUID, UpdatesInput) (*User, error)
 }
 
 func (m *mockService) Register(ctx context.Context, input RegisterInput) (*User, error) {
