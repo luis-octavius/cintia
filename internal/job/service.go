@@ -189,7 +189,7 @@ func (s *service) UpdateJob(ctx context.Context, id uuid.UUID, updates UpdateJob
 	}
 
 	if updates.Location != "" {
-		job.Location = updates.Company
+		job.Location = updates.Location
 		updated = true
 	}
 

@@ -110,6 +110,9 @@ func (s *service) GetJobApplications(ctx context.Context, jobID uuid.UUID) ([]*A
 	}
 
 	applications, err := s.repo.GetJobApplications(ctx, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get job applications: %w", err)
+	}
 
 	return applications, nil
 }
@@ -143,7 +146,7 @@ func (s *service) UpdateApplication(ctx context.Context, id uuid.UUID, updates U
 		updated = true
 	}
 
-	if updates.ReminderSent {
+	if application.ReminderSent != updates.ReminderSent {
 		application.ReminderSent = updates.ReminderSent
 		updated = true
 	}

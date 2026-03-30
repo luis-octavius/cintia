@@ -112,7 +112,7 @@ func (h *GinHandler) GetProfileHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusFound, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
 			"id":         user.ID,
 			"name":       user.Name,
@@ -154,7 +154,7 @@ func (h *GinHandler) UpdateProfileHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.UpdateProfile(ctx, userID, req)
+	user, err := h.service.UpdateProfile(c.Request.Context(), userID, req)
 	if err != nil {
 		var status int
 		switch {

@@ -133,29 +133,29 @@ func (h *GinHandler) GetUserApplicationsHandler(c *gin.Context) {
 
 // 3. GET /api/applications/:id - details of an application
 func (h *GinHandler) GetApplicationHandler(c *gin.Context) {
-	jobIDStr := c.Param("id")
-	if jobIDStr == "" {
+	appIDStr := c.Param("id")
+	if appIDStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "application id is required",
 		})
 		return
 	}
 
-	jobID, err := uuid.Parse(jobIDStr)
+	appID, err := uuid.Parse(appIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid application id format",
+		})
+		return
+	}
+
+	app, err := h.service.GetApplicationByID(c.Request.Context(), appID)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, ErrApplicationNotFound) {
 			status = http.StatusNotFound
 		}
 		c.JSON(status, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	app, err := h.service.GetApplicationByID(c.Request.Context(), jobID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
 		return
@@ -199,9 +199,9 @@ func (h *GinHandler) GetJobApplicationsHandler(c *gin.Context) {
 	}
 
 	jobIDStr := c.Param("jobID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "job does is required",
+	if jobIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "job id is required",
 		})
 		return
 	}

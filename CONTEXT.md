@@ -1,3 +1,12 @@
+## Atualizacao de manutencao (2026-03-29)
+
+- Corrigido status HTTP de perfil: `GET /api/users/me` agora retorna 200 em vez de 302.
+- Corrigido contexto de requisicao em update de perfil para usar `c.Request.Context()`.
+- Corrigido bug no update de vaga: campo `location` nao usa mais o valor de `company`.
+- Melhorado update de aplicacao para permitir alternar `reminder_sent` entre `true` e `false`.
+- Corrigido tratamento de erro em listagem de candidaturas por vaga no service.
+- Corrigido parsing/validacao de IDs e status HTTP em handlers de `applications`.
+
 Perfeito! Vou preparar um resumo completo e estruturado de tudo que construímos até agora. Você pode copiar e colar em um novo chat para continuarmos de onde paramos.
 
 ---
