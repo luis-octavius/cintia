@@ -2,6 +2,14 @@
 
 ## Atualizacao de manutencao (2026-03-30)
 
+### Scraper Service (segunda entrega)
+- Fontes `linkedin` e `indeed` agora fazem fetch HTTP real e parse de HTML para extrair vagas.
+- Adicionada normalizacao de links de vaga para remover parametros de tracking (`utm_*`, `trk`, `ref`, `refid`).
+- Deduplicacao melhorada no scheduler para evitar criar duplicatas na mesma execucao usando link normalizado (com fallback por assinatura de conteudo).
+- Adicionados testes de integracao de fontes com `httptest` para validar fluxo fetch + parse.
+- Adicionados testes para deduplicacao com links equivalentes contendo query params diferentes.
+- Pipeline segue parcial: parser atual e baseline funcional para evolucao incremental por portal.
+
 ### Scraper Service (primeira entrega)
 - Implementado `internal/scraper/scheduler.go` com orquestracao por fontes, loop periodico e run unico.
 - Adicionado tracking de estatisticas por execucao (fetched, created, skipped) e por fonte.

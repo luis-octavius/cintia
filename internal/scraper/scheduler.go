@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/luis-octavius/cintia/internal/job"
+	"github.com/luis-octavius/cintia/internal/scraper/sources"
 )
 
 type JobService interface {
@@ -61,6 +63,7 @@ func (s *Scheduler) RunOnce(ctx context.Context) RunStats {
 	stats := RunStats{
 		SourceResults: make(map[string]SourceStats),
 	}
+	seen := make(map[string]struct{})
 
 	for _, source := range s.sources {
 		name := source.Name()
@@ -79,6 +82,15 @@ func (s *Scheduler) RunOnce(ctx context.Context) RunStats {
 		stats.TotalFetched += len(jobs)
 
 		for _, jobInput := range jobs {
+			jobInput.Link = sources.NormalizeJobLink(jobInput.Link)
+			key := dedupKey(jobInput)
+			if _, exists := seen[key]; exists {
+				sourceStats.Skipped++
+				stats.TotalSkipped++
+				continue
+			}
+			seen[key] = struct{}{}
+
 			_, err := s.service.CreateJob(ctx, jobInput)
 			if err != nil {
 				if errors.Is(err, job.ErrDuplicateJob) {
@@ -101,6 +113,14 @@ func (s *Scheduler) RunOnce(ctx context.Context) RunStats {
 	}
 
 	return stats
+}
+
+func dedupKey(input job.CreateJobInput) string {
+	if input.Link != "" {
+		return strings.ToLower(strings.TrimSpace(input.Link))
+	}
+
+	return strings.ToLower(strings.TrimSpace(input.Source + "|" + input.Title + "|" + input.Company + "|" + input.Location))
 }
 
 func (s *Scheduler) Run(ctx context.Context) {

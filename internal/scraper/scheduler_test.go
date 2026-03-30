@@ -74,11 +74,37 @@ func TestRunOnce_RecordsSourceErrors(t *testing.T) {
 	}
 }
 
+func TestRunOnce_DedupByNormalizedLink(t *testing.T) {
+	service := &mockJobService{}
+	sources := []Source{
+		mockSource{name: "linkedin", jobs: []job.CreateJobInput{
+			{Title: "Go Dev", Company: "A", Source: "linkedin", Link: "https://linkedin.com/jobs/view/123?utm_source=a", PostedDate: time.Now()},
+			{Title: "Go Dev", Company: "A", Source: "linkedin", Link: "https://linkedin.com/jobs/view/123?utm_source=b", PostedDate: time.Now()},
+		}},
+	}
+
+	scheduler := NewScheduler(service, sources, time.Minute, log.Default())
+	stats := scheduler.RunOnce(context.Background())
+
+	if service.createCalls != 1 {
+		t.Fatalf("expected 1 create call after dedup, got %d", service.createCalls)
+	}
+
+	if stats.TotalSkipped != 1 {
+		t.Fatalf("expected 1 skipped duplicate, got %d", stats.TotalSkipped)
+	}
+}
+
 type mockJobService struct {
-	createErr error
+	createErr    error
+	createCalls  int
+	createdInput []job.CreateJobInput
 }
 
 func (m *mockJobService) CreateJob(ctx context.Context, input job.CreateJobInput) (*job.Job, error) {
+	m.createCalls++
+	m.createdInput = append(m.createdInput, input)
+
 	if m.createErr != nil {
 		return nil, m.createErr
 	}

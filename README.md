@@ -40,7 +40,7 @@
 - [x] Application tracking with status transitions
 - [x] PostgreSQL database with sqlc
 - [x] JWT-based auth middleware
-- [ ] Job scraping pipeline (scheduler/worker wired, source parsing still incomplete)
+- [ ] Job scraping pipeline (basic HTML parsing + scraper integration tests in place, production-grade extraction pending)
 - [ ] RabbitMQ integration for reminders
 - [ ] Email notifications
 - [ ] Analytics dashboard
