@@ -37,12 +37,15 @@
 ## Roadmap
 
 - [x] User authentication & profiles
-- [ ] Job scraping pipeline
-- [ ] Application tracking
+- [x] Application tracking with status transitions
+- [x] PostgreSQL database with sqlc
+- [x] JWT-based auth middleware
+- [ ] Job scraping pipeline (structure in place, sources incomplete)
 - [ ] RabbitMQ integration for reminders
 - [ ] Email notifications
 - [ ] Analytics dashboard
 - [ ] CLI tool with Cobra
+- [ ] Handler unit tests (newly added)
 
 ## Project Structure
 

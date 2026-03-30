@@ -1,11 +1,18 @@
 ## Atualizacao de manutencao (2026-03-29)
 
+### API Fixes
 - Corrigido status HTTP de perfil: `GET /api/users/me` agora retorna 200 em vez de 302.
 - Corrigido contexto de requisicao em update de perfil para usar `c.Request.Context()`.
 - Corrigido bug no update de vaga: campo `location` nao usa mais o valor de `company`.
 - Melhorado update de aplicacao para permitir alternar `reminder_sent` entre `true` e `false`.
 - Corrigido tratamento de erro em listagem de candidaturas por vaga no service.
 - Corrigido parsing/validacao de IDs e status HTTP em handlers de `applications`.
+- Adicionado tratamento de `ErrJobInactive` em CreateApplicationHandler.
+- Status HTTP corrigidos: GetJobHandler agora retorna 404 por default, ToggleJobStatusHandler retorna 200 em vez de 202.
+
+### Tests
+- Adicionados testes de handler para user, job, e application packages.
+- Testes verificam permission checks, status codes, e error scenarios.
 
 Perfeito! Vou preparar um resumo completo e estruturado de tudo que construímos até agora. Você pode copiar e colar em um novo chat para continuarmos de onde paramos.
 
@@ -141,30 +148,30 @@ type Service interface {
 
 ## 🛣 **PRÓXIMOS PASSOS (O QUE NÃO IMPLEMENTAMOS AINDA)**
 
-### **1. Banco de Dados REAL (PostgreSQL)**
-- [ ] Implementar repositórios com sqlc
-- [ ] Migrações com Goose
-- [ ] Conexão no main.go
+### **1. Banco de Dados REAL (PostgreSQL)** ✅ DONE
+- [x] Implementar repositórios com sqlc  
+- [x] Migrações com Goose (schema definido)
+- [x] Conexão no main.go
 
-### **2. Scraper Service**
-- [ ] Scrapers para LinkedIn, Indeed, etc.
-- [ ] Worker para scraping periódico
+### **2. Scraper Service** 🚧 PARTIAL
+- [ ] Scrapers para LinkedIn, Indeed (esqueleto em `internal/scraper/sources/`)
+- [ ] Worker para scraping periódico em `internal/scraper/scheduler.go`
 - [ ] Inserção automática de vagas
 
-### **3. RabbitMQ Integration**
+### **3. RabbitMQ Integration** ⏳ PLANNED
 - [ ] Workers para notificações
 - [ ] Lembretes de entrevista
 - [ ] Filas para processamento assíncrono
 
-### **4. CLI com Cobra**
+### **4. CLI com Cobra** ⏳ PLANNED
 - [ ] Comandos para administração
 - [ ] Scraping manual
 - [ ] Export/import de dados
 
-### **5. Testes**
-- [ ] Testes unitários para services
+### **5. Testes** 🚧 INPROGRESS
+- [x] Testes unitários para handlers (user, job, application)
 - [ ] Testes de integração
-- [ ] Mocks refinados
+- [ ] Testes para services
 
 ### **6. Features Adicionais**
 - [ ] Dashboard com estatísticas
